@@ -63,23 +63,28 @@ export default function HomePage() {
   const depositPrimogems = async(amount) => {
     if (atm) {
       try {
-        let tx = await atm.depositPrimogems(amount);
+        const price = await atm.getPrimogemPrice(amount);
+        let tx = await atm.depositPrimogems(amount, {
+          value: price,
+          gasLimit: 300000
+        });
         await tx.wait();
         getPrimogems();
         setError(""); // Clear any previous errors
       } catch (err) {
         console.error("Error:", err);
         if (err.reason) {
-          // Convert technical messages to user-friendly ones
           if (err.reason.includes("You are not the Traveler")) {
             setError("Please connect with the correct Traveler account");
           } else if (err.reason.includes("Invalid primogem")) {
             setError("Invalid primogem package selected");
+          } else if (err.reason.includes("Incorrect ETH")) {
+            setError("Incorrect ETH amount sent for primogem purchase");
           } else {
             setError(err.reason);
           }
         } else {
-          setError("Failed to purchase primogems. Please try again.");
+          setError("Failed to purchase primogems. Please check if you have enough ETH and try again.");
         }
       }
     }
