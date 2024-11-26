@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-contract Assessment {
-    address payable public owner;
+contract WishingSystem {
+    address payable public traveler;
     uint256 public primogems;
     mapping(uint256 => uint256) public primogemPrices;
 
-    event PrimogemDeposit(uint256 amount);
-    event PrimogemWithdraw(uint256 amount);
+    event PrimogemPurchase(uint256 amount);
+    event WishMade(uint256 amount);
 
     constructor(uint initPrimogems) payable {
-        owner = payable(msg.sender);
+        traveler = payable(msg.sender);
         primogems = initPrimogems;
 
         // Set prices in wei (1 ETH = 10^18 wei)
@@ -26,32 +26,32 @@ contract Assessment {
         return primogems;
     }
 
-    function depositPrimogems(uint256 _amount) public payable {
+    function purchasePrimogems(uint256 _amount) public payable {
         uint _previousBalance = primogems;
-        require(msg.sender == owner, "You are not the Traveler of this account");
+        require(msg.sender == traveler, "You are not the Traveler of this account");
         require(_amount == 60 || _amount == 300 || _amount == 980 || _amount == 1980 || _amount == 3280 || _amount == 6480, "Invalid primogem amount");
         require(msg.value == primogemPrices[_amount], "Incorrect ETH amount sent");
 
         primogems += _amount;
         assert(primogems == _previousBalance + _amount);
-        emit PrimogemDeposit(_amount);
+        emit PrimogemPurchase(_amount);
     }
 
-    error InsufficientPrimogems(uint256 balance, uint256 withdrawAmount);
+    error InsufficientPrimogems(uint256 balance, uint256 wishCost);
 
-    function withdrawPrimogems(uint256 _withdrawAmount) public {
-        require(msg.sender == owner, "You are not the Traveler of this account");
-        require(_withdrawAmount == 160 || _withdrawAmount == 1600, "You can only withdraw 160 (1 wish) or 1600 (10 wishes) primogems");
+    function makeWish(uint256 _wishAmount) public {
+        require(msg.sender == traveler, "You are not the Traveler of this account");
+        require(_wishAmount == 160 || _wishAmount == 1600, "You can only make 1 wish (160) or 10 wishes (1600)");
         uint _previousBalance = primogems;
-        if (primogems < _withdrawAmount) {
+        if (primogems < _wishAmount) {
             revert InsufficientPrimogems({
                 balance: primogems,
-                withdrawAmount: _withdrawAmount
+                wishCost: _wishAmount
             });
         }
-        primogems -= _withdrawAmount;
-        assert(primogems == (_previousBalance - _withdrawAmount));
-        emit PrimogemWithdraw(_withdrawAmount);
+        primogems -= _wishAmount;
+        assert(primogems == (_previousBalance - _wishAmount));
+        emit WishMade(_wishAmount);
     }
 
     function getPrimogemPrice(uint256 _amount) public view returns(uint256) {

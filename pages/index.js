@@ -1,16 +1,16 @@
 import {useState, useEffect} from "react";
 import {ethers} from "ethers";
-import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json";
+import wishingSystem_abi from "../artifacts/contracts/Assessment.sol/WishingSystem.json";
 
 export default function HomePage() {
   const [ethWallet, setEthWallet] = useState(undefined);
   const [account, setAccount] = useState(undefined);
-  const [atm, setATM] = useState(undefined);
+  const [wishingSystem, setWishingSystem] = useState(undefined);
   const [balance, setBalance] = useState(undefined);
   const [error, setError] = useState(undefined);
 
   const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-  const atmABI = atm_abi.abi;
+  const wishingSystemABI = wishingSystem_abi.abi;
 
   const getWallet = async() => {
     if (window.ethereum) {
@@ -43,34 +43,33 @@ export default function HomePage() {
     handleAccount(accounts);
 
     // once wallet is set we can get a reference to our deployed contract
-    getATMContract();
+    getWishingContract();
   };
 
-  const getATMContract = () => {
+  const getWishingContract = () => {
     const provider = new ethers.providers.Web3Provider(ethWallet);
     const signer = provider.getSigner();
-    const atmContract = new ethers.Contract(contractAddress, atmABI, signer);
-
-    setATM(atmContract);
+    const wishingSystemContract = new ethers.Contract(contractAddress, wishingSystemABI, signer);
+    setWishingSystem(wishingSystemContract);
   }
 
   const getPrimogems = async() => {
-    if (atm) {
-      setBalance((await atm.getPrimogems()).toNumber());
+    if (wishingSystem) {
+      setBalance((await wishingSystem.getPrimogems()).toNumber());
     }
   }
 
-  const depositPrimogems = async(amount) => {
-    if (atm) {
+  const purchasePrimogems = async(amount) => {
+    if (wishingSystem) {
       try {
-        const price = await atm.getPrimogemPrice(amount);
-        let tx = await atm.depositPrimogems(amount, {
+        const price = await wishingSystem.getPrimogemPrice(amount);
+        let tx = await wishingSystem.purchasePrimogems(amount, {
           value: price,
           gasLimit: 300000
         });
         await tx.wait();
         getPrimogems();
-        setError(""); // Clear any previous errors
+        setError("");
       } catch (err) {
         console.error("Error:", err);
         if (err.reason) {
@@ -90,17 +89,16 @@ export default function HomePage() {
     }
   }
 
-  const withdrawPrimogems = async(amount) => {
-    if (atm) {
+  const makeWish = async(amount) => {
+    if (wishingSystem) {
       try {
-        let tx = await atm.withdrawPrimogems(amount);
+        let tx = await wishingSystem.makeWish(amount);
         await tx.wait();
         getPrimogems();
-        setError(""); // Clear any previous errors
+        setError("");
       } catch (err) {
         console.error("Error:", err);
         if (err.reason) {
-          // Convert technical messages to user-friendly ones
           if (err.reason.includes("You are not the Traveler")) {
             setError("Please connect with the correct Traveler account");
           } else if (err.reason.includes("You can only withdraw")) {
@@ -109,7 +107,6 @@ export default function HomePage() {
             setError(err.reason);
           }
         } else if (err.message && err.message.includes('InsufficientPrimogems')) {
-          // Extract numbers from the error message using regex
           const numbers = err.message.match(/\d+/g);
           if (numbers && numbers.length >= 2) {
             const currentBalance = numbers[0];
@@ -127,7 +124,7 @@ export default function HomePage() {
 
   const initUser = () => {
     if (!ethWallet) {
-      return <p>Please install Metamask to access your Primogem Bank.</p>
+      return <p>Please install Metamask to access the Wishing System.</p>
     }
 
     if (!account) {
@@ -149,19 +146,19 @@ export default function HomePage() {
           <div>
             <h3>Buy Primogems:</h3>
             <div className="button-grid">
-              <button onClick={() => depositPrimogems(60)}>60 Primogems ($0.99)</button>
-              <button onClick={() => depositPrimogems(300)}>300 Primogems ($4.99)</button>
-              <button onClick={() => depositPrimogems(980)}>980 Primogems ($14.99)</button>
-              <button onClick={() => depositPrimogems(1980)}>1980 Primogems ($29.99)</button>
-              <button onClick={() => depositPrimogems(3280)}>3280 Primogems ($49.99)</button>
-              <button onClick={() => depositPrimogems(6480)}>6480 Primogems ($99.99)</button>
+              <button onClick={() => purchasePrimogems(60)}>60 Primogems ($0.99)</button>
+              <button onClick={() => purchasePrimogems(300)}>300 Primogems ($4.99)</button>
+              <button onClick={() => purchasePrimogems(980)}>980 Primogems ($14.99)</button>
+              <button onClick={() => purchasePrimogems(1980)}>1980 Primogems ($29.99)</button>
+              <button onClick={() => purchasePrimogems(3280)}>3280 Primogems ($49.99)</button>
+              <button onClick={() => purchasePrimogems(6480)}>6480 Primogems ($99.99)</button>
             </div>
           </div>
           <div>
             <h3>Make Wishes:</h3>
             <div className="wish-buttons">
-              <button onClick={() => withdrawPrimogems(160)}>1 Wish (160 Primogems)</button>
-              <button onClick={() => withdrawPrimogems(1600)}>10 Wishes (1600 Primogems)</button>
+              <button onClick={() => makeWish(160)}>1 Wish (160 Primogems)</button>
+              <button onClick={() => makeWish(1600)}>10 Wishes (1600 Primogems)</button>
             </div>
           </div>
         </div>
@@ -174,8 +171,8 @@ export default function HomePage() {
   return (
     <main className="container">
       <header className="header">
-        <h1>Welcome to the Genshin Impact Primogem Bank!</h1>
-        <p>Store your precious Primogems safely with us, Traveler!</p>
+        <h1>Welcome to the Genshin Impact Wishing System!</h1>
+        <p>Purchase Primogems and make your wishes here, Traveler!</p>
       </header>
       {initUser()}
       <style jsx>{`
